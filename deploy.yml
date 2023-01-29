@@ -6,7 +6,7 @@
       - 'python3-pip'      
       - 'docker.io'
     - deploy_container_port: '5000'
-    - deploy_version: '0.1-1'
+    - deploy_version: '0.1-2'
 
   tasks:
 
@@ -22,7 +22,7 @@
       executable: pip3
 
   - name: running container id request
-    command: 'docker ps -aq'
+    ansible.builtin.command: 'docker ps -aq'
     register: container_id
     ignore_errors: true
 
@@ -31,7 +31,7 @@
       running_container_id: '{{ container_id.stdout }}'
  
   - name: running container port request
-    command: 'docker port {{ running_container_id }}'
+    ansible.builtin.command: 'docker port {{ running_container_id }}'
     register: container_port
     ignore_errors: true
 
@@ -40,11 +40,11 @@
       running_container_port: '{{ container_port.stdout.split(":")[-1] }}'
 
   - name: Show running_container_id
-    debug:
+    ansible.builtin.debug:
       var: running_container_id
 
   - name: Show running_container_port
-    debug:
+    ansible.builtin.debug:
       var: running_container_port
 
   - name: Set deploy_container_port
@@ -53,5 +53,39 @@
     when: running_container_port == '5000'
 
   - name: Show deploy_container_port
-    debug:
+    ansible.builtin.debug:
       var: deploy_container_port
+
+  - name: Start deploy container
+    docker_container:
+      name: 'backend-{{ deploy_version }}-{{ deploy_container_port }}'
+      image: 'backend:{{ deploy_version }}'
+      state: 'started'
+      restart_policy: 'on-failure'
+      ports:
+        - '127.0.0.1:{{ deploy_container_port }}:5000'
+
+  - name: Check deploy
+    block:
+    - name: Verify that the new container is serving traffic
+      ansible.builtin.uri:
+        url: 'http://127.0.0.1:{{ deploy_container_port }}'
+        status_code: 200
+      register: container_status
+      retries: 5
+      delay: 2
+      until: "container_status.status == 200"
+
+    rescue:
+    - name: 'Terminate failed container'
+      ansible.builtin.shell: 'docker stop backend-{{ deploy_version }}-{{ deploy_container_port }} ; docker rm --force backend-{{ deploy_version }}-{{ deploy_container_port }}'
+      ignore_errors: 'yes'
+
+  - name: Start deploy container
+    docker_container:
+      name: 'backend-{{ deploy_version }}-{{ deploy_container_port }}'
+      image: 'backend:{{ deploy_version }}'
+      state: 'started'
+      restart_policy: 'on-failure'
+      ports:
+        - '127.0.0.1:{{ deploy_container_port }}:5000'
