@@ -108,3 +108,10 @@
     ansible.builtin.shell: 'docker stop {{ running_container_id }} ; docker rm --force {{ running_container_id }}'
     ignore_errors: 'yes'
     when: container_status.status == '200'
+
+  handlers:
+    - name: restart nginx
+      become: yes
+      service:
+        name: nginx
+        state: restarted
