@@ -1,0 +1,57 @@
+---
+- name: Test
+  hosts: localhost
+  vars:
+    - package:
+      - 'python3-pip'      
+      - 'docker.io'
+    - deploy_container_port: '5000'
+    - deploy_version: '0.1-1'
+
+  tasks:
+
+  - name: Make sure the packages are present
+    apt:
+      name: '{{ package }}'
+      state: present
+      cache_valid_time: 10000
+
+  - name: Install docker-py 
+    pip:
+      name: docker
+      executable: pip3
+
+  - name: running container id request
+    command: 'docker ps -aq'
+    register: container_id
+    ignore_errors: true
+
+  - name: Set running_container_id
+    ansible.builtin.set_fact:
+      running_container_id: '{{ container_id.stdout }}'
+ 
+  - name: running container port request
+    command: 'docker port {{ running_container_id }}'
+    register: container_port
+    ignore_errors: true
+
+  - name: Set running_container_port
+    ansible.builtin.set_fact:
+      running_container_port: '{{ container_port.stdout.split(":")[-1] }}'
+
+  - name: Show running_container_id
+    debug:
+      var: running_container_id
+
+  - name: Show running_container_port
+    debug:
+      var: running_container_port
+
+  - name: Set deploy_container_port
+    ansible.builtin.set_fact:
+      deploy_container_port: '5001'
+    when: running_container_port == '5000'
+
+  - name: Show deploy_container_port
+    debug:
+      var: deploy_container_port

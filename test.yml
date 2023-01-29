@@ -1,0 +1,16 @@
+- block:
+    - name: 'Verify that the new container is serving traffic'
+      uri:
+        url: "http://localhost:{{ ephemeral_port }}{{ app.health_check_uri }}"
+        status_code: 200
+      register: container_status
+      retries: "{{ app.health_retries | default('20') }}"
+      delay: "{{ app.health_retry_delay | default('2') }}"
+      until: "container_status.status == 200"
+  rescue:
+    - name: 'Terminate failed container'
+      shell: "docker stop {{ container_id }} ; docker rm --force {{ container_id }}"
+      ignore_errors: 'yes'
+
+    - fail:
+        msg: 'New container failed to return HTTP 200 and has been terminated'
