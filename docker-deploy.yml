@@ -9,10 +9,6 @@
 
   post_tasks:
 
-  - name: Show container_status.status
-    ansible.builtin.debug:
-      var: container_status.status
-
   - name: Ensure the running container is destroy
     ansible.builtin.shell: 'docker stop {{ running_container_id }} ; docker rm --force {{ running_container_id }}'
     ignore_errors: 'yes'
