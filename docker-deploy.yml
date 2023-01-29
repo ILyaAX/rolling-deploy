@@ -12,4 +12,4 @@
   - name: Ensure the running container is destroy
     ansible.builtin.shell: 'docker stop {{ running_container_id }} ; docker rm --force {{ running_container_id }}'
     ignore_errors: 'yes'
-    when: container_status.status == '200'
+    when: container_status.status == 200
