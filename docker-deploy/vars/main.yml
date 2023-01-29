@@ -1,2 +1,7 @@
 ---
 # vars file for docker-deploy
+
+package:
+  - 'python3-pip'      
+  - 'docker.io'
+deploy_container_port: '5000'

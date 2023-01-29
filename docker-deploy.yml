@@ -1,0 +1,15 @@
+---
+- name: Test
+  hosts: localhost
+  vars:
+    - deploy_version: '0.1-2'
+
+  roles:
+    - docker-deploy
+
+  post_tasks:
+
+  - name: Ensure the running container is destroy
+    ansible.builtin.shell: 'docker stop {{ running_container_id }} ; docker rm --force {{ running_container_id }}'
+    ignore_errors: 'yes'
+    when: container_status.status == '200'
